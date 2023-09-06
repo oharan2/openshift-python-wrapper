@@ -165,13 +165,17 @@ class DataVolume(NamespacedResource):
             if self.hostpath_node:
                 self.res["metadata"].setdefault("annotations", {}).update(
                     {
-                        f"{NamespacedResource.ApiGroup.KUBEVIRT_IO}/provisionOnNode": self.hostpath_node
+                        f"{NamespacedResource.ApiGroup.KUBEVIRT_IO}/provisionOnNode": (
+                            self.hostpath_node
+                        )
                     }
                 )
             if self.multus_annotation:
                 self.res["metadata"].setdefault("annotations", {}).update(
                     {
-                        f"{NamespacedResource.ApiGroup.K8S_V1_CNI_CNCF_IO}/networks": self.multus_annotation
+                        f"{NamespacedResource.ApiGroup.K8S_V1_CNI_CNCF_IO}/networks": (
+                            self.multus_annotation
+                        )
                     }
                 )
             if self.bind_immediate_annotation:
@@ -188,7 +192,9 @@ class DataVolume(NamespacedResource):
             if self.delete_after_completion:
                 self.res["metadata"].setdefault("annotations", {}).update(
                     {
-                        f"{self.api_group}/storage.deleteAfterCompletion": self.delete_after_completion
+                        f"{self.api_group}/storage.deleteAfterCompletion": (
+                            self.delete_after_completion
+                        )
                     }
                 )
 
@@ -224,8 +230,17 @@ class DataVolume(NamespacedResource):
 
     @property
     def scratch_pvc(self):
+        pvc_metadata = self.pvc.instance.metadata
+        scratch_pvc_prefix = (
+            f"prime-{pvc_metadata.uid}"
+            if pvc_metadata.annotations.get(
+                f"{self.ApiGroup.CDI_KUBEVIRT_IO}/storage.usePopulator"
+            )
+            == "true"
+            else self.name
+        )
         return PersistentVolumeClaim(
-            name=f"{self.name}-scratch",
+            name=f"{scratch_pvc_prefix}-scratch",
             namespace=self.namespace,
             client=self.client,
         )
@@ -304,8 +319,9 @@ class DataVolume(NamespacedResource):
                 ):
                     raise TimeoutExpiredError(
                         value=(
-                            f"Exited on the stop_status_func {stop_status_func.__name__}. "
-                            f"{status_of_dv_str} {sample.status}"
+                            "Exited on the stop_status_func"
+                            f" {stop_status_func.__name__}."
+                            f" {status_of_dv_str} {sample.status}"
                         )
                     )
 
